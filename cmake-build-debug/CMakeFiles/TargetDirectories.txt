@@ -1,0 +1,3 @@
+C:/Users/Pedro/OneDrive/Documentos/UNIFEI/7_semestre/ED2/trabalhoPratico/cmake-build-debug/CMakeFiles/trabalhoPratico.dir
+C:/Users/Pedro/OneDrive/Documentos/UNIFEI/7_semestre/ED2/trabalhoPratico/cmake-build-debug/CMakeFiles/edit_cache.dir
+C:/Users/Pedro/OneDrive/Documentos/UNIFEI/7_semestre/ED2/trabalhoPratico/cmake-build-debug/CMakeFiles/rebuild_cache.dir
