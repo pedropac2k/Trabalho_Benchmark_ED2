@@ -5,11 +5,24 @@
 #include <windows.h>
 
 //Declação das constantes usadas durante os testes.
-#define TAM        5
-#define SEED       1
+#define TAM        4
+#define SEED_1     1
+#define SEED_0	   0
 #define PORC       10
 #define QTD_TESTES 10
-const int tamanhos[TAM] = {1000, 10000, 100000, 1000000, 10000000};
+#define NUM_ARQ    7
+
+const int tamanhos[TAM] = {100, 1000, 10000, 100000};
+
+const char *arquivos[NUM_ARQ] = {
+	"BubbleSort.csv",
+	"ShellSort.csv",
+	"HeapSort.csv",
+	"InsertionSort.csv",
+	"SelectionSort.csv",
+	"MergeSort.csv",
+	"QuickSort.csv"
+};
 
 typedef struct t_metricas {
 	unsigned long long comparacoes;
@@ -35,7 +48,7 @@ void escolhaDeTestes() {
 	printf("\n##### Iniciando rotina de testes #####\n");
 	escolha = mostraMenu();
 	do {
-		// Execução do teste baseado na escolha
+		// Execução dos testes baseado na escolha do usuário
 		switch (escolha) {
 			case 1:
 				testeBolhaInteligente();
@@ -69,6 +82,15 @@ void escolhaDeTestes() {
 }
 
 
+void inicializaArquivoCSV(char *nomeArq) {
+	FILE *arq = fopen(nomeArq, "w");
+	if (arq != NULL) {
+		fprintf(arq, "DataSet,Tamanho,Comparacoes,Movimentacoes,Tempo_ms\n");
+		fclose(arq);
+	}
+}
+
+
 double obterTempo() {
 	LARGE_INTEGER frequencia, contador;
 	QueryPerformanceFrequency(&frequencia);
@@ -77,7 +99,35 @@ double obterTempo() {
 }
 
 
-void executarTesteGenerico(AlgoritmoOrdenacao func) {
+void registrarResultadoCSV(char *nomeMetodo, char *dataset, int tamanho, met *m, double tempo) {
+	char nomeArquivo[50];
+	strcpy(nomeArquivo, nomeMetodo);
+
+	FILE *arq = fopen(nomeArquivo, "a");
+	if (arq == NULL)
+		return;
+
+	fprintf(arq, "%s,%d,%llu,%llu,%.4f\n", dataset, tamanho, ((acesso_metricas*)m)->comparacoes, ((acesso_metricas*)m)->movimentacoes,tempo);
+
+	fclose(arq);
+}
+
+void registrarMediasCSV(char *nomeMetodo, char *dataset, int tamanho, unsigned long long mediaComp, unsigned long long mediaMov, double tempo) {
+	char nomeArquivo[50];
+	strcpy(nomeArquivo, nomeMetodo);
+
+	FILE *arq = fopen(nomeArquivo, "a");
+	if (arq == NULL)
+		return;
+
+	fprintf(arq, "%s,%d,%llu,%llu,%.4f\n", dataset, tamanho, mediaComp, mediaMov,tempo);
+
+	fclose(arq);
+}
+
+
+
+void executarTesteGenerico(AlgoritmoOrdenacao func, char *nomeAlgoritimo) {
 	r *requisicao;
 	met *metricas;
 	double inicio;
@@ -89,8 +139,8 @@ void executarTesteGenerico(AlgoritmoOrdenacao func) {
 	printf("\n##########################################");
 	printf("\n-------- DataSet Decrescente --------\n");
 	printf("##########################################\n");
-	for(int i = 0; i < TAM; i++) {
-		requisicao = geraDecrescente(tamanhos[i], SEED);
+	for(int i=0; i<TAM; i++) {
+		requisicao = geraDecrescente(tamanhos[i], SEED_1);
 
 		inicio = obterTempo();
 		metricas = func(requisicao, tamanhos[i]);
@@ -99,6 +149,8 @@ void executarTesteGenerico(AlgoritmoOrdenacao func) {
 		printf("\n--- Resultados para %d elementos ---", tamanhos[i]);
 		printf("\nTempo de processamento: %.4fms\n", (fim - inicio));
 		imprimeMetricas(metricas);
+
+		registrarResultadoCSV(nomeAlgoritimo, "Decrescente", tamanhos[i], metricas, (fim - inicio));
 
 		liberaVetor(requisicao);
 		liberaMetricas(metricas);
@@ -107,8 +159,8 @@ void executarTesteGenerico(AlgoritmoOrdenacao func) {
 	printf("\n##########################################");
 	printf("\n-------- DataSet Ordenado --------\n");
 	printf("##########################################\n");
-	for(int i = 0; i < TAM; i++) {
-		requisicao = geraOrdenados(tamanhos[i], SEED);
+	for(int i=0; i<TAM; i++) {
+		requisicao = geraOrdenados(tamanhos[i], SEED_1);
 
 		inicio = obterTempo();
 		metricas = func(requisicao, tamanhos[i]);
@@ -117,6 +169,8 @@ void executarTesteGenerico(AlgoritmoOrdenacao func) {
 		printf("\n--- Resultados para %d elementos ---", tamanhos[i]);
 		printf("\nTempo de processamento: %.4fms\n", (fim - inicio));
 		imprimeMetricas(metricas);
+
+		registrarResultadoCSV(nomeAlgoritimo, "Ordenado", tamanhos[i], metricas, (fim - inicio));
 
 		liberaVetor(requisicao);
 		liberaMetricas(metricas);
@@ -126,12 +180,12 @@ void executarTesteGenerico(AlgoritmoOrdenacao func) {
 	printf("\n-------- DataSet Quase Ordenado --------\n");
 	printf("Numero de testes realizados para obter a media: %d", QTD_TESTES);
 	printf("\n##########################################\n");
-	for(int i = 0; i < TAM; i++) {
+	for(int i=0; i<TAM; i++) {
 		mediaComp = 0;
 		mediaMov = 0;
 		mediaTempo = 0;
 		for(int j = 0; j < QTD_TESTES; j++) {
-			requisicao = geraQuaseOrdenados(tamanhos[i], SEED, PORC);
+			requisicao = geraQuaseOrdenados(tamanhos[i], SEED_0, PORC);
 
 			inicio = obterTempo();
 			metricas = func(requisicao, tamanhos[i]);
@@ -147,6 +201,8 @@ void executarTesteGenerico(AlgoritmoOrdenacao func) {
 		mediaComp /= QTD_TESTES;
 		mediaMov /= QTD_TESTES;
 		mediaTempo /= QTD_TESTES;
+
+		registrarMediasCSV(nomeAlgoritimo, "QuaseOrdenado", tamanhos[i], mediaComp, mediaMov, mediaTempo);
 
 		printf("\n--- Resultados para %d elementos ---", tamanhos[i]);
 		printf("\nMedia das Comparacoes: %llu", mediaComp);
@@ -163,8 +219,8 @@ void executarTesteGenerico(AlgoritmoOrdenacao func) {
 		mediaComp = 0;
 		mediaMov = 0;
 		mediaTempo = 0;
-		for(int j = 0; j < QTD_TESTES; j++) {
-			requisicao = geraAleatorios(tamanhos[i], SEED);
+		for(int j=0; j<QTD_TESTES; j++) {
+			requisicao = geraAleatorios(tamanhos[i], SEED_0);
 
 			inicio = obterTempo();
 			metricas = func(requisicao, tamanhos[i]);
@@ -181,6 +237,9 @@ void executarTesteGenerico(AlgoritmoOrdenacao func) {
 		mediaMov /= QTD_TESTES;
 		mediaTempo /= QTD_TESTES;
 
+		registrarMediasCSV(nomeAlgoritimo, "Aleatorio", tamanhos[i], mediaComp, mediaMov, mediaTempo);
+
+
 		printf("\n--- Resultados para %d elementos ---", tamanhos[i]);
 		printf("\nMedia das Comparacoes: %llu", mediaComp);
 		printf("\nMedia das Movimentacoes: %llu", mediaMov);
@@ -189,7 +248,7 @@ void executarTesteGenerico(AlgoritmoOrdenacao func) {
 }
 
 
-void executarTesteParametrizado(AlgoritmoParametrizado func) {
+void executarTesteParametrizado(AlgoritmoParametrizado func, char *nomeAlgoritimo) {
 	r *requisicao;
 	met *metricas;
 	double inicio;
@@ -202,7 +261,7 @@ void executarTesteParametrizado(AlgoritmoParametrizado func) {
 	printf("\n-------- DataSet Decrescente --------\n");
 	printf("##########################################\n");
 	for(int i=0; i<TAM; i++) {
-		requisicao = geraDecrescente(tamanhos[i], SEED);
+		requisicao = geraDecrescente(tamanhos[i], SEED_1);
 		metricas = alocaMetricas();
 
 		inicio = obterTempo();
@@ -212,6 +271,8 @@ void executarTesteParametrizado(AlgoritmoParametrizado func) {
 		printf("\n--- Resultados para %d elementos ---", tamanhos[i]);
 		printf("\nTempo de processamento: %.4fms\n", (fim - inicio));
 		imprimeMetricas(metricas);
+
+		registrarResultadoCSV(nomeAlgoritimo, "Decrescente", tamanhos[i], metricas, (fim - inicio));
 
 		liberaVetor(requisicao);
 		liberaMetricas(metricas);
@@ -221,7 +282,7 @@ void executarTesteParametrizado(AlgoritmoParametrizado func) {
 	printf("\n-------- DataSet Ordenado --------\n");
 	printf("##########################################\n");
 	for(int i=0; i<TAM; i++) {
-		requisicao = geraOrdenados(tamanhos[i], SEED);
+		requisicao = geraOrdenados(tamanhos[i], SEED_1);
 		metricas = alocaMetricas();
 
 		inicio = obterTempo();
@@ -231,6 +292,8 @@ void executarTesteParametrizado(AlgoritmoParametrizado func) {
 		printf("\n--- Resultados para %d elementos ---", tamanhos[i]);
 		printf("\nTempo de processamento: %.4fms\n", (fim - inicio));
 		imprimeMetricas(metricas);
+
+		registrarResultadoCSV(nomeAlgoritimo, "Ordenado", tamanhos[i], metricas, (fim - inicio));
 
 		liberaVetor(requisicao);
 		liberaMetricas(metricas);
@@ -241,9 +304,11 @@ void executarTesteParametrizado(AlgoritmoParametrizado func) {
 	printf("Numero de testes realizados para obter a media: %d", QTD_TESTES);
 	printf("\n##########################################\n");
 	for(int i=0; i<TAM; i++) {
-		mediaComp = 0; mediaMov = 0; mediaTempo = 0;
+		mediaComp = 0;
+		mediaMov = 0;
+		mediaTempo = 0;
 		for(int j=0; j<QTD_TESTES; j++) {
-			requisicao = geraQuaseOrdenados(tamanhos[i], SEED, PORC);
+			requisicao = geraQuaseOrdenados(tamanhos[i], SEED_0, PORC);
 			metricas = alocaMetricas();
 
 			inicio = obterTempo();
@@ -260,6 +325,8 @@ void executarTesteParametrizado(AlgoritmoParametrizado func) {
 		mediaComp /= QTD_TESTES;
 		mediaMov /= QTD_TESTES;
 		mediaTempo /= QTD_TESTES;
+
+		registrarMediasCSV(nomeAlgoritimo, "QuaseOrdenado", tamanhos[i], mediaComp, mediaMov, mediaTempo);
 
 		printf("\n--- Resultados para %d elementos ---", tamanhos[i]);
 		printf("\nMedia das Comparacoes: %llu", mediaComp);
@@ -272,9 +339,11 @@ void executarTesteParametrizado(AlgoritmoParametrizado func) {
 	printf("Numero de testes realizados para obter a media: %d", QTD_TESTES);
 	printf("\n##########################################\n");
 	for(int i=0; i<TAM; i++) {
-		mediaComp = 0; mediaMov = 0; mediaTempo = 0;
+		mediaComp = 0;
+		mediaMov = 0;
+		mediaTempo = 0;
 			for(int j=0; j<QTD_TESTES; j++) {
-			requisicao = geraAleatorios(tamanhos[i], SEED);
+			requisicao = geraAleatorios(tamanhos[i], SEED_0);
 			metricas = alocaMetricas();
 
 			inicio = obterTempo();
@@ -292,6 +361,8 @@ void executarTesteParametrizado(AlgoritmoParametrizado func) {
 		mediaMov /= QTD_TESTES;
 		mediaTempo /= QTD_TESTES;
 
+		registrarMediasCSV(nomeAlgoritimo, "Aleatorio", tamanhos[i], mediaComp, mediaMov, mediaTempo);
+
 		printf("\n--- Resultados para %d elementos ---", tamanhos[i]);
 		printf("\nMedia das Comparacoes: %llu", mediaComp);
 		printf("\nMedia das Movimentacoes: %llu", mediaMov);
@@ -301,35 +372,42 @@ void executarTesteParametrizado(AlgoritmoParametrizado func) {
 
 
 void testeBolhaInteligente() {
-	executarTesteGenerico(bolhaInteligente);
+	inicializaArquivoCSV(arquivos[0]);
+	executarTesteGenerico(bolhaInteligente, arquivos[0]);
 }
 
 
 void testeShellSort() {
-    executarTesteGenerico(shellSort);
+	inicializaArquivoCSV(arquivos[1]);
+    executarTesteGenerico(shellSort, arquivos[1]);
 }
 
 
 void testeHeapSort() {
-    executarTesteGenerico(heapSort);
+	inicializaArquivoCSV(arquivos[2]);
+    executarTesteGenerico(heapSort, arquivos[2]);
 }
 
 
 void testeInsercao() {
-   executarTesteGenerico(insercao);
+	inicializaArquivoCSV(arquivos[3]);
+   executarTesteGenerico(insercao, arquivos[3]);
 }
 
 
 void testeSelecao() {
-	executarTesteGenerico(selecao);
+	inicializaArquivoCSV(arquivos[4]);
+	executarTesteGenerico(selecao, arquivos[4]);
 }
 
 
 void testeMergeSort() {
-	executarTesteParametrizado(mergeSort);
+	inicializaArquivoCSV(arquivos[5]);
+	executarTesteParametrizado(mergeSort, arquivos[5]);
 }
 
 
 void testeQuickSortTradicional() {
-	executarTesteParametrizado(quickSort);
+	inicializaArquivoCSV(arquivos[6]);
+	executarTesteParametrizado(quickSort, arquivos[6]);
 }
