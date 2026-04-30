@@ -1,0 +1,17 @@
+DataSet,Tamanho,Comparacoes,Movimentacoes,Tempo_ms
+Decrescente,10,41,41,0.0007
+Decrescente,100,3693,3689,0.0195
+Decrescente,1000,324253,324249,1.2140
+Decrescente,10000,29056409,29056401,105.7491
+Ordenado,10,14,0,0.0003
+Ordenado,100,160,0,0.0008
+Ordenado,1000,1599,0,0.0085
+Ordenado,10000,19640,0,0.0653
+QuaseOrdenado,10,16,6,0.0002
+QuaseOrdenado,100,508,454,0.0023
+QuaseOrdenado,1000,35276,35187,0.1731
+QuaseOrdenado,10000,3598145,3597954,13.2893
+Aleatorio,10,30,22,0.0002
+Aleatorio,100,2395,2382,0.0088
+Aleatorio,1000,185857,185823,0.7671
+Aleatorio,10000,17245690,17245624,60.7371
